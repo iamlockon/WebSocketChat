@@ -1,0 +1,63 @@
+{% load static %}
+
+          {% for message in messages %}
+            {% if message.sender == user.username %}
+              <div class="comment item" style="display: flex; justify-content: flex-end" >
+                <div class="content">
+                  <a class="author">{{message.sender}}</a>
+                  <div class="metadata">
+                    <span class="date">{{message.timestamp}}</span>
+                  </div>
+                  {% if message.text %}
+                  <div class="text">
+                    {{message.text}}
+                  </div>
+                  {% elif message.get_extension in extension_list %}
+                    <div class="preview" style="background-image:url( {{message.file.url}} );background-position: 50% 50%; background-repeat: no-repeat; height: 100px; width: 100px; background-size: cover;">
+                    </div>
+                  {% else %}
+                  <div>
+                    <div class="ui label">
+                    <a href={{message.file.url}}>  
+                      {{message.get_filename}}
+                      <div class="ui blue label">{{message.file.size|filesizeformat}}</div>
+                    </a>
+                  </div>
+                  </div>
+                  {% endif %}
+                </div>
+                <a class="avatar" >
+                  <img src="{% static "chatapp/semantic/assets/images/logo.svg" %}" class="image" >
+                </a>
+              </div>
+              {% else %}
+              <div class="comment item">
+                <a class="avatar" >
+                  <img src="{% static "chatapp/semantic/assets/images/logo.svg" %}" class="image" >
+                </a>
+                <div class="content">
+                  <a class="author">{{message.sender}}</a>
+                  <div class="metadata">
+                    <span class="date">{{message.timestamp}}</span>
+                  </div>
+                  {% if message.text %}
+                  <div class="text">
+                    {{message.text}}
+                  </div>
+                  {% elif message.get_extension in extension_list %}
+                    <div class="preview" style="background-image:url( {{message.file.url}} );background-position: 50% 50%; background-repeat: no-repeat; height: 100px; width: 100px; background-size: cover;">
+                    </div>
+                  {% else %}
+                  <div>
+                    <div class="ui label">
+                    <a href={{message.file.url}}>  
+                      {{message.get_filename}}
+                      <div class="ui blue label">{{message.file.size|filesizeformat}}</div>
+                    </a>
+                  </div>
+                  </div>
+                  {% endif %}
+                </div>
+              </div>
+            {% endif %}
+          {% endfor %}

@@ -1,0 +1,43 @@
+{% load static %}
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8" />
+	<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+	<link rel="stylesheet" type="text/css" href="{% static "chatapp/semantic/dist/components/message.css" %} ">
+	<script src="https://code.jquery.com/jquery-3.1.1.min.js"></script>
+	<title>Logup form</title>
+
+	<style type="text/css">
+	  body {
+	    background-color: #DADADA;
+	  }
+	  body > .grid {
+	    height: 100%;
+	  }
+	  .image {
+	    margin-top: -100px;
+	  }
+	  .column {
+	    max-width: 450px;
+	  }
+	</style>
+</head>
+<body>
+<form action="/chatapp/logup" method="post">
+	{% csrf_token %}
+	{{ form }}
+	
+	<input type="submit" value="Submit">
+</form>
+{% if logmes %}
+  <div id="mes">
+	<div class="ui compact floating message">{{ logmes }}</div>
+  </div>
+{% endif %}
+<script type="text/javascript">
+	$('#mes').delay(1300).fadeOut(); 
+</script>
+</body>
+</html>

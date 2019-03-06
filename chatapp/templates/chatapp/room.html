@@ -1,0 +1,265 @@
+<!-- chat/templates/chat/room.html -->
+{% load static %}
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=0.6, maximum-scale=0.6">
+    <title>Chat Rooms</title>
+    <script src="https://code.jquery.com/jquery-3.1.1.min.js"></script>
+    <script src="{% static "chatapp/semantic/dist/semantic.min.js" %}"></script>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+    <link rel="stylesheet" type="text/css" href="{% static "chatapp/semantic/dist/semantic.min.css" %}">
+    <script src="https://cdn.jsdelivr.net/npm/js-cookie@2/src/js.cookie.min.js"></script>
+</head>
+<body>
+    <div class="ui stackable menu">
+        <div class="ui floating labeled icon dropdown item">
+              <i class="material-icons">
+              menu
+              </i>
+              <div class="menu">
+                <div class="item">
+                    <div class="ui  fitted borderless item" id="open_modal">Preferences</div>
+                </div>
+                <div class="item">
+                    <div class="ui  fitted borderless item" id="open_modal">Account Settings</div>
+                </div>
+              </div>
+        </div>
+        <div class="right item" >
+             <div class="ui blue button" id="backbtn">Back</div>
+        </div>
+        <div class="item" >
+             <div class="ui blue  button" id="lobtn">Logout</div>
+        </div>
+    </div>
+
+    <div class="ui grid">
+
+    <div class="three wide column">
+    <div class="ui container">Room member
+        <div class="ui segment">
+            <div class="ui divided items" id="userlist">
+              {% for user in users %}
+              <div class="ui item" id={{user}}>{{user}}</div>
+              {% endfor %}
+            </div>
+        </div>
+    </div>
+    </div>
+    <div class="twelve wide column">
+    <div class="ui container" style="padding: 0em">
+        <div class="ui segment" style="height: 100%;width: 100%;overflow-y:auto;" id="chat-log">
+          <div class="ui fluid comments" id="comm" style="max-width:none">
+        {% include "./chatlog.html" %}
+      </div>
+        </div>
+        <div class="ui grid" style="padding-bottom: 15px;">
+            <div class="column" >
+            <label for="file-upload" style="border: 1px #ccc;display: inline-block; cursor: pointer;">
+                <i class="ui material-icons" title="Upload Photos">attachment</i>
+            </label>
+            <form method="post" id="upload_form" enctype="multipart/form-data">
+            {% csrf_token %}
+            <input id="file-upload" type="file" style="display: none;" multiple accept="*"/>
+            </form>
+            </div>
+        </div>
+        <div>  
+            <div id="output"><i class="ui material-icons" title="Remove attachment" label="Remove attachment" id="rmpto" style="display:none;float:right;"><a href="#">cancel</a></i><div id="uploadfiletext"></div></div>
+        </div>
+        <div class="ui fluid input">
+            
+            <input type="text" id="chat-message-input" placeholder="What do you want to share?">
+        </div>
+    
+    </div>
+    </div>
+    </div>
+    <div class="ui compact modal hidden" id="preview">
+      <div class="header">Header</div>
+      <div class="image content">
+        <img class="image" id="preview_image" ></img>
+      </div>
+        
+      </div>
+    </div>
+</body>
+<script>
+    var roomName = "{{ room_name_json }}";
+    $("document").ready(function(event) {
+      console.log()
+        $('#file-upload').change(function(event){
+           document.getElementById('uploadfiletext').innerHTML = "";
+           var file = event.target.files[0];
+           var output = document.getElementById('output');
+           console.log(file.type);
+           if(file.type.split('/')[0] == "image"){
+            output.style = `background-image:url(\"`+ URL.createObjectURL(file)+ `\");` +`background-position: 50% 50%; background-repeat: no-repeat; height: 100px; width: 100px; background-size: cover;`;
+            }
+           else{
+            output.style = `background-position: 50% 50%; background-repeat: no-repeat; height: 60px;background-size: cover;`;
+            console.log(file.name);
+            document.getElementById('uploadfiletext').innerHTML = "Ready to upload:" + file.name;
+           }
+           var removebtn = document.getElementById('rmpto');
+           removebtn.style = "display: flex;width: 17px";
+           //output.src = URL.createObjectURL(event.target.files[0]); 
+       });
+    });
+
+    $('#lobtn').click(function () {
+        window.location.replace('/chatapp/logout');
+    });
+    $('#backbtn').click(function () {
+        window.location.replace('/chatapp/index');
+    });
+    $('.ui.dropdown').dropdown();
+    document.getElementById('rmpto').addEventListener("click", removeFile, false);
+    function removeFile(e){
+        e.preventDefault();
+        document.getElementById('output').style = "display:none;";
+        document.getElementById('rmpto').style = "display: none;";
+        document.getElementById('uploadfiletext').innerHTML = "";
+        document.getElementById('file-upload').value = "";
+    }
+    
+    var chatSocket = new WebSocket(
+        'ws://' + window.location.host +
+        '/ws/chat/' + roomName + '/');
+
+    chatSocket.onmessage = function(e) {
+        var data = JSON.parse(e.data);
+        if (data['add_user']){
+            //TODO : need to add new users
+            if(document.getElementById(data['add_user']))
+                return;
+            var useritem = `
+                <div class="ui item"`+ `id=`+ data['add_user'] + `>` + data['add_user']+ `</div>`;
+            document.getElementById('userlist').innerHTML += useritem;
+            return;
+        }
+        if (data['delete_user']){
+            //TODO : need to delete users
+            document.getElementById(data['delete_user']).remove();
+            return;
+        }
+        console.log("adding messages in onmessage");
+        //reload the chat-log
+        //var csrftoken = Cookies.get('csrftoken');
+        //console.log("pre-posting message:"+ csrftoken);
+        var user = "{{ user.username }}";
+        //$.get("/chatapp/"+roomName+"/chatupdate/",function(data){
+        $('#chat-log').load(window.location.href + " #comm");
+        //window.location = "/chatapp/"+ roomName + "/";
+        //});
+        
+        //move to bottom smoothly
+        var div = document.getElementById('chat-log');
+        $('#chat-log').animate({
+            scrollTop: div.scrollHeight - div.clientHeight
+        }, 200);
+        
+    };
+
+    chatSocket.onclose = function(e) {
+        console.error('Chat socket closed unexpectedly');
+    };
+    
+    
+    document.querySelector('#chat-message-input').focus();
+    document.querySelector('#chat-message-input').onkeydown = function(e) {
+        if (e.keyCode === 13) {  // enter, return
+            var messageInputDom = document.querySelector('#chat-message-input');
+            var mess = messageInputDom.value;
+            if(mess !==''){
+                var csrftoken = Cookies.get('csrftoken');
+                console.log("pre-posting message:"+ csrftoken);
+                var user = "{{ user.username }}";
+                $.ajax({    
+                    headers: { "X-CSRFToken": csrftoken },
+                    type:"POST",
+                    url:"/chatapp/"+roomName+"/",
+                    data: {'text':mess},     
+                    success: function(data, status, jqXHR){
+                         chatSocket.send(JSON.stringify({
+                             'chattext': mess,
+                             'sender': user,
+                             'timestamp': data['timestamp'],
+                             'isText': true,
+                         }));
+                    }
+                });
+                messageInputDom.value = '';
+            }
+            console.log(document.getElementById('file-upload').value);
+            if(document.getElementById('file-upload').value != ""){
+                console.log("got something to upload....");
+                var csrftoken = Cookies.get('csrftoken');
+                var user = "{{ user.username }}";
+                console.log("pre submit..");
+                $('#upload_form').submit(function(e){
+                    e.preventDefault();
+                    console.log("enter file upload form submit");
+                    console.log(document.getElementById('file-upload').files[0]);
+                    var form_data = new FormData();
+                    form_data.append('file',document.getElementById('file-upload').files[0]);
+
+                    //prevent multiple submit.
+                    $('#rmpto').click();
+
+                    var XHR = new XMLHttpRequest();
+                    XHR.timeout = 3000;
+                    XHR.addEventListener("load", function(event){
+                        //finished request
+                        if((XHR.status >= 200 && XHR.status < 300) || XHR.status == 304){
+                            //upload successful
+
+                            console.log(event);
+                            //send file to Channels like preview
+                            var res = JSON.parse(event.target.response);
+                            var url = res['file_url'];
+                            console.log("URL: "+ url);
+                            chatSocket.send(JSON.stringify({
+                                'chattext': url,
+                                'sender': user,
+                                'timestamp': res['timestamp'],
+                                'isText': false,
+                            }));
+                            
+
+                        }else{
+                            console.log("Request not completed...");
+                        }
+                    });
+                    XHR.addEventListener("error", function(event){
+                        alert('XHR error.');
+                    });
+                    XHR.open("POST", "/chatapp/" + roomName + "/" + "fileupload/");
+                    XHR.setRequestHeader('X-CSRFToken', csrftoken);
+                    try{
+                        XHR.send(form_data);
+                    }catch(e){
+                        console.log(e);
+                    }
+
+                });
+                $('#upload_form').submit();
+
+                console.log("after submit function");
+                
+            }
+        }
+    };
+    //To prevent the click event registered dropped, change to this way
+    //https://stackoverflow.com/questions/14339309/jquery-click-event-handlers-dont-work-after-loading-html-page-with-load
+    $('#chat-log').on('click',"div.preview", function () {
+        document.getElementById('preview_image').style = "content:"+ $(this)[0].style.backgroundImage + ";width:100%;height:100%;";
+        //document.getElementById('preview_image').style.content = $(this)[0].style.backgroundImage ;
+        $('#preview').modal('show');
+
+    });
+</script>
+</html>
